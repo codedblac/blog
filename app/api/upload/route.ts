@@ -24,17 +24,35 @@ export async function POST(request: NextRequest) {
     const ext = file.name.split('.').pop()
     const filename = `blog/${timestamp}.${ext}`
 
-    const { data, error } = await supabase.storage
+    // Upload file to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('media')
-      .upload(filename, file)
+      .upload(filename, file, { cacheControl: '3600', upsert: false })
 
-    if (error) throw error
+    if (uploadError) throw uploadError
 
-    const { data: url } = supabase.storage
+    // Get public URL
+    const { data: urlData } = supabase.storage
       .from('media')
       .getPublicUrl(filename)
 
-    return NextResponse.json({ url: url.publicUrl })
+    const publicUrl = urlData.publicUrl
+
+    // Optional: insert into media table for tracking
+    const { error: dbError } = await supabase
+      .from('media')
+      .insert({
+        user_id: null, // or set user_id if you have auth
+        file_name: file.name,
+        file_path: filename,
+        file_type: file.type,
+        file_size: file.size,
+        created_at: new Date().toISOString()
+      })
+
+    if (dbError) console.error('DB insert error:', dbError)
+
+    return NextResponse.json({ url: publicUrl })
 
   } catch (error) {
     console.error(error)

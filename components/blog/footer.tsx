@@ -35,7 +35,7 @@ export function BlogFooter() {
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" className="inline-block">
-              <span className="font-serif text-2xl font-bold text-primary">Glow</span>
+              <span className="font-serif text-2xl font-bold text-primary">Liz</span>
               <span className="ml-1 text-sm text-muted-foreground">Beauty Blog</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -95,15 +95,12 @@ export function BlogFooter() {
             <ul className="mt-4 space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4" />
-                <span>(555) 123-4567</span>
+                <span>+254722241321</span>
               </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>hello@glowbeauty.com</span>
-              </li>
+              
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5" />
-                <span>123 Beauty Lane<br />New York, NY 10001</span>
+                <span>Hurlingham, Nairobi<br />Kenya</span>
               </li>
             </ul>
           </div>
@@ -113,8 +110,10 @@ export function BlogFooter() {
         <div className="mt-12 border-t border-border pt-8">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} Glow Beauty. All rights reserved.
+              &copy; {new Date().getFullYear()} Liz Hairstylist. All rights reserved.
             </p>
+            
+            
             <div className="flex gap-6">
               {footerLinks.legal.map((item) => (
                 <Link

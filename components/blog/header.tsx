@@ -69,7 +69,7 @@ export function BlogHeader() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <span className="font-serif text-2xl font-bold tracking-tight text-primary">
-            Glow
+            Liz
           </span>
           <span className="text-sm font-medium text-muted-foreground">Beauty Blog</span>
         </Link>
