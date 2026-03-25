@@ -44,7 +44,7 @@ export function AdminSidebar({ userRole }: AdminSidebarProps) {
         {/* Logo */}
         <div className="flex h-16 items-center border-b border-border px-6">
           <Link href="/admin" className="flex items-center gap-2">
-            <span className="font-serif text-xl font-bold text-primary">Glow</span>
+            <span className="font-serif text-xl font-bold text-primary">Liz</span>
             <span className="text-xs text-muted-foreground">Admin</span>
           </Link>
         </div>

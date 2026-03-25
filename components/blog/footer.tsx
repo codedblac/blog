@@ -113,7 +113,7 @@ export function BlogFooter() {
               &copy; {new Date().getFullYear()} Liz Hairstylist. All rights reserved.
             </p>
             
-            
+            git push
             <div className="flex gap-6">
               {footerLinks.legal.map((item) => (
                 <Link

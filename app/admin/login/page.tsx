@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
-            <span className="font-serif text-3xl font-bold text-primary">Glow</span>
+            <span className="font-serif text-3xl font-bold text-primary">Liz</span>
             <span className="ml-1 text-sm text-muted-foreground">Admin</span>
           </div>
           <CardTitle className="text-xl">Welcome back</CardTitle>
