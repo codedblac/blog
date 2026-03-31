@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Check, X, MoreHorizontal, Trash2 } from "lucide-react"
+import { X, MoreHorizontal, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 import type { Comment, Post } from "@/lib/types"
@@ -32,43 +32,48 @@ interface CommentWithPost extends Comment {
 export default function CommentsPage() {
   const [comments, setComments] = useState<CommentWithPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [filter, setFilter] = useState<string>("all")
   const router = useRouter()
 
   useEffect(() => {
     fetchComments()
-  }, [filter])
+  }, [])
 
+  // -------------------------
+  // Fetch all comments
+  // -------------------------
   async function fetchComments() {
     setIsLoading(true)
     const supabase = createClient()
-    let query = supabase
+
+    const { data, error } = await supabase
       .from("comments")
-      .select(`
-        *,
-        post:posts(id, title, slug)
-      `)
+      .select(`*, post:posts(id, title, slug)`)
       .order("created_at", { ascending: false })
 
-    if (filter !== "all") {
-      query = query.eq("status", filter)
+    if (error) {
+      toast.error("Failed to fetch comments")
+      setIsLoading(false)
+      return
     }
 
-    const { data } = await query
     setComments((data || []) as CommentWithPost[])
     setIsLoading(false)
   }
 
-  const updateStatus = async (id: string, status: string) => {
+  // -------------------------
+  // Mark a comment as spam
+  // -------------------------
+  const markAsSpam = async (id: string) => {
     try {
       const supabase = createClient()
       const { error } = await supabase
         .from("comments")
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ status: "spam", updated_at: new Date().toISOString() })
         .eq("id", id)
 
       if (error) throw error
-      toast.success(`Comment ${status}`)
+
+      toast.success("Comment marked as spam")
       fetchComments()
       router.refresh()
     } catch {
@@ -76,6 +81,9 @@ export default function CommentsPage() {
     }
   }
 
+  // -------------------------
+  // Delete a comment
+  // -------------------------
   const deleteComment = async (id: string) => {
     if (!confirm("Are you sure you want to delete this comment?")) return
 
@@ -83,7 +91,8 @@ export default function CommentsPage() {
       const supabase = createClient()
       const { error } = await supabase.from("comments").delete().eq("id", id)
       if (error) throw error
-      toast.success("Comment deleted")
+
+      toast.success("Comment removed")
       fetchComments()
       router.refresh()
     } catch {
@@ -91,33 +100,13 @@ export default function CommentsPage() {
     }
   }
 
-  const filters = [
-    { value: "all", label: "All" },
-    { value: "pending", label: "Pending" },
-    { value: "approved", label: "Approved" },
-    { value: "spam", label: "Spam" },
-    { value: "trash", label: "Trash" },
-  ]
-
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Comments</h1>
-        <p className="text-muted-foreground">Manage and moderate comments</p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2">
-        {filters.map((f) => (
-          <Button
-            key={f.value}
-            variant={filter === f.value ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(f.value)}
-          >
-            {f.label}
-          </Button>
-        ))}
+        <p className="text-muted-foreground">
+          Comments are posted automatically. Remove or flag any inappropriate ones.
+        </p>
       </div>
 
       <Card>
@@ -133,6 +122,7 @@ export default function CommentsPage() {
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
                 <TableRow>
@@ -145,13 +135,19 @@ export default function CommentsPage() {
                   <TableRow key={comment.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{comment.author_name || "Anonymous"}</div>
-                        <div className="text-sm text-muted-foreground">{comment.author_email}</div>
+                        <div className="font-medium">
+                          {comment.author_name || "Anonymous"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {comment.author_email}
+                        </div>
                       </div>
                     </TableCell>
+
                     <TableCell className="max-w-xs">
                       <p className="line-clamp-2 text-sm">{comment.content}</p>
                     </TableCell>
+
                     <TableCell>
                       <Link
                         href={`/blog/${comment.post?.slug}`}
@@ -161,24 +157,23 @@ export default function CommentsPage() {
                         {comment.post?.title}
                       </Link>
                     </TableCell>
+
                     <TableCell>
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          comment.status === "approved"
-                            ? "bg-green-100 text-green-700"
-                            : comment.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : comment.status === "spam"
+                          comment.status === "spam"
                             ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-700"
+                            : "bg-green-100 text-green-700"
                         }`}
                       >
-                        {comment.status}
+                        {comment.status || "approved"}
                       </span>
                     </TableCell>
+
                     <TableCell className="text-muted-foreground">
                       {format(new Date(comment.created_at), "MMM d, yyyy")}
                     </TableCell>
+
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -186,25 +181,18 @@ export default function CommentsPage() {
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
+
                         <DropdownMenuContent align="end">
-                          {comment.status !== "approved" && (
-                            <DropdownMenuItem
-                              onClick={() => updateStatus(comment.id, "approved")}
-                              className="flex items-center gap-2"
-                            >
-                              <Check className="h-4 w-4" />
-                              Approve
-                            </DropdownMenuItem>
-                          )}
                           {comment.status !== "spam" && (
                             <DropdownMenuItem
-                              onClick={() => updateStatus(comment.id, "spam")}
+                              onClick={() => markAsSpam(comment.id)}
                               className="flex items-center gap-2"
                             >
                               <X className="h-4 w-4" />
                               Mark as Spam
                             </DropdownMenuItem>
                           )}
+
                           <DropdownMenuItem
                             onClick={() => deleteComment(comment.id)}
                             className="flex items-center gap-2 text-destructive focus:text-destructive"
@@ -219,7 +207,10 @@ export default function CommentsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="py-12 text-center text-muted-foreground"
+                  >
                     No comments found.
                   </TableCell>
                 </TableRow>

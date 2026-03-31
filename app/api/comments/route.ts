@@ -1,7 +1,10 @@
+"use server"
+
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
+// Comment validation schema
 const commentSchema = z.object({
   post_id: z.string().uuid(),
   author_name: z.string().min(2).max(100),
@@ -10,6 +13,9 @@ const commentSchema = z.object({
   parent_id: z.string().uuid().optional(),
 })
 
+// ==============================
+// GET: fetch all comments for a post
+// ==============================
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const postId = searchParams.get("postId")
@@ -19,11 +25,12 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createClient()
+
   const { data, error } = await supabase
     .from("comments")
     .select("*")
     .eq("post_id", postId)
-    .eq("status", "approved")
+    // 🔹 Remove "approved" filter → show all comments
     .order("created_at", { ascending: true })
 
   if (error) {
@@ -33,17 +40,23 @@ export async function GET(request: Request) {
   return NextResponse.json(data)
 }
 
+// ==============================
+// POST: add a new comment (auto-approved)
+// ==============================
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const validatedData = commentSchema.parse(body)
 
     const supabase = await createClient()
+
     const { data, error } = await supabase
       .from("comments")
       .insert({
         ...validatedData,
-        status: "pending",
+        // ✅ Auto-publish comment immediately
+        status: "approved",
+        created_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -57,6 +70,9 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }
