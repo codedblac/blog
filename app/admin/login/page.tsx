@@ -27,11 +27,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
 
@@ -39,23 +35,41 @@ export default function AdminLoginPage() {
     setIsLoading(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+
+      // 1️⃣ Sign in user
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
 
-      if (error) {
-        toast.error(error.message)
+      if (signInError) {
+        toast.error(signInError.message)
         return
       }
 
-      // Check if user has admin/editor/author role
-      const { data: profile } = await supabase
+      if (!signInData.user) {
+        toast.error("No user found")
+        return
+      }
+
+      const userId = signInData.user.id
+
+      // 2️⃣ Fetch this user's profile ONLY
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role")
+        .eq("id", userId)
         .single()
 
-      if (!profile || !["admin", "editor", "author"].includes(profile.role)) {
+      if (profileError || !profile) {
+        toast.error("Failed to load profile")
+        return
+      }
+
+      // 3️⃣ Normalize role
+      const role = profile.role?.trim().toLowerCase()
+
+      if (!["admin", "editor", "author"].includes(role)) {
         await supabase.auth.signOut()
         toast.error("You do not have permission to access the admin panel")
         return
@@ -64,7 +78,8 @@ export default function AdminLoginPage() {
       toast.success("Welcome back!")
       router.push("/admin")
       router.refresh()
-    } catch {
+    } catch (err) {
+      console.error(err)
       toast.error("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -86,15 +101,8 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@example.com"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
+              <Input id="email" type="email" placeholder="admin@example.com" {...register("email")} />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -115,9 +123,7 @@ export default function AdminLoginPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : null}
