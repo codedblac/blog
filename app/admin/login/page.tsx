@@ -10,14 +10,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import Link from "next/link"
 import { Spinner } from "@/components/ui/spinner"
 import { Eye, EyeOff } from "lucide-react"
@@ -44,59 +37,34 @@ export default function AdminLoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
-
     try {
       const supabase = createClient()
-
-      // 🔐 Step 1: Login
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
 
-      if (signInError) {
-        toast.error(signInError.message)
+      if (error) {
+        toast.error(error.message)
         return
       }
 
-      // 🔐 Step 2: Get logged-in user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-
-      if (userError || !user) {
-        toast.error("Authentication failed")
-        return
-      }
-
-      // 🔐 Step 3: Fetch correct profile (FIXED)
-      const { data: profile, error: profileError } = await supabase
+      // Check if user has admin/editor/author role
+      const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", user.id) // ✅ critical fix
         .single()
 
-      if (profileError || !profile) {
-        console.log("PROFILE ERROR:", profileError)
-        await supabase.auth.signOut()
-        toast.error("Failed to load profile")
-        return
-      }
-
-      // 🔐 Step 4: Role check
-      if (!["admin", "editor", "author"].includes(profile.role)) {
+      if (!profile || !["admin", "editor", "author"].includes(profile.role)) {
         await supabase.auth.signOut()
         toast.error("You do not have permission to access the admin panel")
         return
       }
 
-      // ✅ Success
       toast.success("Welcome back!")
       router.push("/admin")
       router.refresh()
-    } catch (err) {
-      console.error(err)
+    } catch {
       toast.error("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -108,20 +76,14 @@ export default function AdminLoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
-            <span className="font-serif text-3xl font-bold text-primary">
-              Liz
-            </span>
+            <span className="font-serif text-3xl font-bold text-primary">Liz</span>
             <span className="ml-1 text-sm text-muted-foreground">Admin</span>
           </div>
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>
-            Sign in to your admin account
-          </CardDescription>
+          <CardDescription>Sign in to your admin account</CardDescription>
         </CardHeader>
-
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -131,13 +93,9 @@ export default function AdminLoginPage() {
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">
-                  {errors.email.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
-
-            {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -154,35 +112,23 @@ export default function AdminLoginPage() {
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">
-                  {errors.password.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
             </div>
-
-            {/* Submit */}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : null}
               Sign In
             </Button>
           </form>
         </CardContent>
-
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link
-              href="/admin/signup"
-              className="text-primary hover:underline"
-            >
+            <Link href="/admin/signup" className="text-primary hover:underline">
               Create one
             </Link>
           </p>
