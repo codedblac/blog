@@ -15,16 +15,16 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Glow Beauty Blog | Hair, Makeup, Skincare & Nail Inspiration',
-    template: '%s | Glow Beauty Blog',
+    default: 'Liz Natural Hair Stylist | Hair, Makeup, Skincare & Nail Inspiration',
+    template: '%s | Liz Natural Hair Stylist',
   },
   description: 'Your destination for hair styling, makeup tutorials, skincare routines and nail art inspiration. Expert tips from professional stylists.',
   keywords: ['beauty blog', 'hair styling', 'makeup tutorials', 'skincare', 'nail art', 'salon', 'beauty tips'],
-  authors: [{ name: 'Glow Beauty' }],
+  authors: [{ name: 'Liz Natural Hair Stylist' }],
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'Glow Beauty Blog',
+    siteName: 'Liz Natural Hair Stylist',
   },
   twitter: {
     card: 'summary_large_image',

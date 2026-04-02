@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function GET() {
   const supabase = await createClient()
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://glowbeauty.com"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://blog.liznaturalhairstylist.com"
 
   const { data: posts } = await supabase
     .from("posts")
@@ -40,7 +40,7 @@ export async function GET() {
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Glow Beauty Blog</title>
+    <title>Liz Beauty Blog</title>
     <link>${baseUrl}</link>
     <description>Your destination for hair, makeup, skincare and nail inspiration. Expert tips from professional stylists.</description>
     <language>en-us</language>

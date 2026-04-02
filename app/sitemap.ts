@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient()
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://glowbeauty.com"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://blog.liznaturalhairstylist.com"
 
   // Get all published posts
   const { data: posts } = await supabase
