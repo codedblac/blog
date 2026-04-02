@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
     try {
       const supabase = createClient()
 
-      // 🔐 Step 1: Sign in
+      // ✅ Step 1: Sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
@@ -59,46 +59,53 @@ export default function AdminLoginPage() {
         return
       }
 
-      // 🔐 Step 2: Get current user
+      // ✅ Step 2: Wait for session to be fully ready
       const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
+        data: { session },
+      } = await supabase.auth.getSession()
 
-      if (userError || !user) {
-        toast.error("Authentication failed")
+      if (!session) {
+        toast.error("Session not found")
         return
       }
 
-      // 🔐 Step 3: Fetch profile CORRECTLY (THIS FIXES YOUR ISSUE)
-      const { data: profile, error: profileError } = await supabase
+      const user = session.user
+
+      // ✅ Step 3: Fetch profile safely (NO .single crash)
+      const { data: profiles, error: profileError } = await supabase
         .from("profiles")
-        .select("role")
-        .eq("id", user.id) // ✅ CRITICAL FIX
-        .single()
+        .select("id, role")
+        .eq("id", user.id)
+        .limit(1)
 
-      if (profileError || !profile) {
-        console.log("PROFILE ERROR:", profileError)
-
+      if (profileError) {
+        console.error("PROFILE FETCH ERROR:", profileError)
         await supabase.auth.signOut()
         toast.error("Failed to load profile")
-
         return
       }
 
-      // 🔐 Step 4: Check role
+      const profile = profiles?.[0]
+
+      if (!profile) {
+        await supabase.auth.signOut()
+        toast.error("Profile not found")
+        return
+      }
+
+      // ✅ Step 4: Role check
       if (!["admin", "editor", "author"].includes(profile.role)) {
         await supabase.auth.signOut()
         toast.error("You do not have permission to access the admin panel")
         return
       }
 
-      // ✅ Success
+      // ✅ SUCCESS
       toast.success("Welcome back!")
       router.push("/admin")
       router.refresh()
     } catch (err) {
-      console.error(err)
+      console.error("LOGIN ERROR:", err)
       toast.error("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
