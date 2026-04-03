@@ -23,12 +23,14 @@ export default function MediaPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
+  const supabase = createClient()
+
   useEffect(() => {
     fetchMedia()
   }, [])
 
   async function fetchMedia() {
-    const supabase = createClient()
+    setIsLoading(true)
     const { data } = await supabase
       .from("media")
       .select("*")
@@ -42,9 +44,8 @@ export default function MediaPage() {
     if (!files || files.length === 0) return
 
     setIsUploading(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       toast.error("You must be logged in to upload files")
       setIsUploading(false)
@@ -54,33 +55,30 @@ export default function MediaPage() {
     try {
       for (const file of files) {
         const fileExt = file.name.split(".").pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `media/${fileName}`
+        const fileName = `blog/${Date.now()}-${Math.random().toString(36).substring(2,8)}.${fileExt}`
 
+        // Upload to Supabase storage bucket 'media'
         const { error: uploadError } = await supabase.storage
-          .from("blog-media")
-          .upload(filePath, file)
+          .from("media")
+          .upload(fileName, file, { cacheControl: "3600", upsert: false })
 
-        if (uploadError) {
-          // If bucket doesn't exist, show helpful message
-          if (uploadError.message.includes("Bucket not found")) {
-            toast.error("Please create a 'blog-media' storage bucket in Supabase")
-            continue
-          }
-          throw uploadError
-        }
+        if (uploadError) throw uploadError
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("blog-media")
-          .getPublicUrl(filePath)
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from("media")
+          .getPublicUrl(fileName)
+
+        const publicUrl = urlData.publicUrl
 
         // Save to media table
         await supabase.from("media").insert({
           user_id: user.id,
           file_name: file.name,
-          file_path: publicUrl,
+          file_path: publicUrl, // store the public URL
           file_type: file.type,
           file_size: file.size,
+          created_at: new Date().toISOString(),
         })
       }
 
@@ -99,12 +97,10 @@ export default function MediaPage() {
     if (!confirm("Are you sure you want to delete this file?")) return
 
     try {
-      const supabase = createClient()
-      
       // Delete from storage
       const fileName = item.file_path.split("/").pop()
       if (fileName) {
-        await supabase.storage.from("blog-media").remove([`media/${fileName}`])
+        await supabase.storage.from("media").remove([`blog/${fileName}`])
       }
 
       // Delete from database
@@ -138,6 +134,7 @@ export default function MediaPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header & Upload */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Media Library</h1>
@@ -162,6 +159,7 @@ export default function MediaPage() {
         </div>
       </div>
 
+      {/* Media Grid */}
       {isLoading ? (
         <div className="py-12 text-center text-muted-foreground">Loading...</div>
       ) : media.length > 0 ? (
